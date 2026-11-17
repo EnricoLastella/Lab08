@@ -25,7 +25,23 @@ class Model:
         :param mese: Mese selezionato (un intero da 1 a 12)
         :return: lista di tuple --> (nome del distributore, media), es. (Distributore A, 1.789)
         """
-        # TODO
+        risultato = []
+
+        for d in self._distributori:
+            tutti_i_prezzi = d.get_prezzi()
+            somma = 0
+            conteggio = 0
+
+            for p in tutti_i_prezzi:
+                if p.data.month == mese:
+                    somma += p.prezzo_litro
+                    conteggio += 1
+
+            if conteggio > 0:
+                media = somma / conteggio
+                risultato.append((d.nome, media))
+
+        return risultato
 
     def get_sequenza_ottima(self, mese:int):
         """
@@ -46,11 +62,52 @@ class Model:
 
     def __ricorsione(self, sequenza_parziale, giorno, ultimo_distributore, costo_corrente, prezzi_settimana):
         """ Implementa la ricorsione """
-        # TODO
+        if giorno > 7:
+            if self.__costo_ottimo == -1 or costo_corrente < self.__costo_ottimo:
+                self.__costo_ottimo = costo_corrente
+                self.__sequenza_ottima = list(sequenza_parziale)
+            return
+
+        for d in self._distributori:
+
+            prezzo_oggi = prezzi_settimana[d.id][giorno -1]
+
+            costo_carburante = prezzo_oggi * 100
+
+            costo_spostamento = 0
+
+            if ultimo_distributore is not None and ultimo_distributore != d.id:
+                costo_spostamento = 5
+
+            costo_scelta = costo_carburante + costo_spostamento
+
+            if self.__costo_ottimo == -1 or costo_corrente + costo_scelta < self.__costo_ottimo:
+
+                sequenza_parziale.append(d.id)
+
+                self.__ricorsione(
+
+                    sequenza_parziale,
+                    giorno+1,
+                    d.id,
+                    costo_corrente + costo_scelta,
+                    prezzi_settimana
+                )
+
+                sequenza_parziale.pop()
 
     def __get_prezzi_prima_settimana_mese(self, mese: int):
         """
         Restituisce i prezzi dei primi 7 giorni del mese selezionato per ciascun distributore.
         :return: un dizionario: {id_distributore: [prezzo_giorno1, ..., prezzo_giorno7]}
         """
-        # TODO
+        prezzi_settimana = {}
+
+        for d in self._distributori:
+            prezzi_7_giorni = []
+            for p in d.get_prezzi():
+                if p.data.month == mese and p.data.day <= 7:
+                    prezzi_7_giorni.append(p.prezzo_litro)
+            prezzi_settimana[d.id] = prezzi_7_giorni
+
+        return prezzi_settimana
